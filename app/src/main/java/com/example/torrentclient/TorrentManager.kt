@@ -4,10 +4,16 @@ import android.content.Context
 import android.media.MediaScannerConnection
 import android.os.Build
 import android.os.Environment
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.libtorrent4j.AddTorrentParams
 import org.libtorrent4j.AlertListener
 import org.libtorrent4j.SessionManager
