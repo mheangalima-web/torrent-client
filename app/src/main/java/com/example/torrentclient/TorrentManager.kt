@@ -8,6 +8,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.libtorrent4j.AddTorrentParams
 import org.libtorrent4j.AlertListener
 import org.libtorrent4j.SessionManager
 import org.libtorrent4j.TorrentHandle
@@ -74,7 +75,7 @@ object TorrentManager {
                     AlertType.ADD_TORRENT -> {
                         val addAlert = alert as AddTorrentAlert
                         val handle = addAlert.handle()
-                        if (handle.isValid) {
+                        if (handle != null && handle.isValid) {
                             handles[handle.infoHash().toHex()] = handle
                         }
                     }
@@ -82,8 +83,9 @@ object TorrentManager {
                         val finishedAlert = alert as TorrentFinishedAlert
                         val handle = finishedAlert.handle()
                         val ctx = appContext
-                        if (handle.isValid && ctx != null) {
-                            val savedTarget = File(getDownloadDirectory(), handle.name())
+                        if (handle != null && handle.isValid && ctx != null) {
+                            val torrentName = handle.name() ?: return
+                            val savedTarget = File(getDownloadDirectory(), torrentName)
                             MediaScannerConnection.scanFile(
                                 ctx,
                                 arrayOf(savedTarget.absolutePath),
@@ -116,15 +118,25 @@ object TorrentManager {
         if (!trimmed.startsWith("magnet:?")) return
 
         scope.launch {
-            session.download(trimmed, dir)
+            try {
+                val params = AddTorrentParams.parseMagnetUri(trimmed)
+                params.savePath(dir.absolutePath)
+                session.swig().async_add_torrent(params.swig())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     fun addTorrentBytes(bytes: ByteArray) {
         val dir = getDownloadDirectory()
         scope.launch {
-            val torrentInfo = TorrentInfo(bytes)
-            session.download(torrentInfo, dir)
+            try {
+                val torrentInfo = TorrentInfo(bytes)
+                session.download(torrentInfo, dir)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -159,7 +171,7 @@ object TorrentManager {
                     val isPaused = pausedHashes.contains(hash)
                     TorrentItem(
                         infoHash = hash,
-                        name = status.name().ifBlank { "Fetching metadata..." },
+                        name = status.name().orEmpty().ifBlank { "Fetching metadata..." },
                         progress = status.progress(),
                         downloadRateBytes = status.downloadRate(),
                         uploadRateBytes = status.uploadRate(),
