@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val serviceIntent = Intent(this, TorrentService::class.java)
-        ContextCompat.startForegroundService(this, serviceIntent)
+        try { ContextCompat.startForegroundService(this, serviceIntent) } catch (e: Exception) { e.printStackTrace(); TorrentManager.start(applicationContext) }
 
         handleMagnetIntent(intent)
 
