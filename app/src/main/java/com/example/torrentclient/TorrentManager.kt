@@ -90,7 +90,7 @@ object TorrentManager {
                         val handle = finishedAlert.handle()
                         val ctx = appContext
                         if (handle != null && handle.isValid && ctx != null) {
-                            val torrentName = handle.name() ?: return
+                            val torrentName = handle.status().name() ?: return
                             val savedTarget = File(getDownloadDirectory(), torrentName)
                             MediaScannerConnection.scanFile(
                                 ctx,
@@ -126,7 +126,7 @@ object TorrentManager {
         scope.launch {
             try {
                 val params = AddTorrentParams.parseMagnetUri(trimmed)
-                params.savePath(dir.absolutePath)
+                params.savePath = dir.absolutePath
                 session.swig().async_add_torrent(params.swig())
             } catch (e: Exception) {
                 e.printStackTrace()
